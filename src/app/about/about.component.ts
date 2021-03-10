@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewEncapsulation } from "@angular/core";
-import { fromEvent, interval, timer } from "rxjs";
+import { fromEvent, interval, Observable, timer } from "rxjs";
 
 @Component({
   selector: "about",
@@ -13,6 +13,29 @@ export class AboutComponent implements OnInit {
     //this.intervalTest();
     //this.timerTest();
     //this.fromEventTest();
+    this.customHttpObservable();
+  }
+
+  customHttpObservable(): void {
+    const http$: Observable<any> = new Observable((observer) => {
+      fetch("/api/courses")
+        .then((response) => {
+          return response.json();
+        })
+        .then((json) => {
+          observer.next(json);
+          observer.complete();
+        })
+        .catch((error) => {
+          observer.error(error);
+        });
+    });
+
+    http$.subscribe({
+      next: (json: any) => console.log(json),
+      error: (error) => console.log(error),
+      complete: () => console.log("HTTP stream completed")
+    });
   }
 
   fromEventTest(): void {
@@ -29,14 +52,12 @@ export class AboutComponent implements OnInit {
     // Definition of stream (observable). Nothing is emitted until it is subscribed to.
     const interval$ = interval(1000);
 
-    const observer = {
-      next: (val: number) => console.log("interval stream => " + val),
-      error: err => console.log(err),
-      complete: () => console.log('interval stream => COMPLETED'),
-    };
-    
     // Stream ends with error or completion. Stream won't emit more after even single error.
-    const subscription = interval$.subscribe(observer);
+    const subscription = interval$.subscribe({
+      next: (val: number) => console.log("interval stream => " + val),
+      error: (err) => console.log(err),
+      complete: () => console.log("interval stream => COMPLETED"),
+    });
 
     setTimeout(() => subscription.unsubscribe(), 5000);
   }
