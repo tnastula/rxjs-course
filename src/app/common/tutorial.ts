@@ -1,4 +1,4 @@
-import { concat, fromEvent, interval, of, timer } from "rxjs";
+import { concat, fromEvent, interval, merge, of, timer } from "rxjs";
 import { map } from "rxjs/operators";
 
 export function runTests() {
@@ -7,7 +7,15 @@ export function runTests() {
   //fromEventTest();
   //httpObservable();
   //mapOperator();
-  this.concatenateTwoStreams();
+  //concatenateTwoStreams();
+  mergeTwoStreams();
+}
+
+function mergeTwoStreams(): void {
+  const interval1$ = interval(1000);
+  const interval2$ = interval1$.pipe(map((val) => 10 * val));
+  const result$ = merge(interval1$, interval2$);
+  result$.subscribe(console.log);
 }
 
 function concatenateTwoStreams(): void {

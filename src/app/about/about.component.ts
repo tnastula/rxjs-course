@@ -9,14 +9,11 @@ import { createHttpObservable } from "../common/util";
   styleUrls: ["./about.component.css"],
 })
 export class AboutComponent implements OnInit {
-  http$: Observable<any> = createHttpObservable("/api/courses");
-
   constructor() {}
 
   ngOnInit() {
-    const interval1$ = interval(1000);
-    const interval2$ = interval1$.pipe(map(val => 10 * val));
-    const result$ = merge(interval1$, interval2$);
-    result$.subscribe(console.log);
+    const http$ = createHttpObservable("/api/courses");
+    const subscription = http$.subscribe(console.log);
+    setTimeout(() => subscription.unsubscribe(), 0);
   }
 }
