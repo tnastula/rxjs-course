@@ -1,5 +1,7 @@
 import { Component, OnInit, ViewEncapsulation } from "@angular/core";
 import { fromEvent, interval, Observable, timer } from "rxjs";
+import { map } from "rxjs/operators";
+import { createHttpObservable } from "../common/util";
 
 @Component({
   selector: "about",
@@ -7,34 +9,35 @@ import { fromEvent, interval, Observable, timer } from "rxjs";
   styleUrls: ["./about.component.css"],
 })
 export class AboutComponent implements OnInit {
+  http$: Observable<any> = createHttpObservable("/api/courses");
+
   constructor() {}
 
   ngOnInit() {
     //this.intervalTest();
     //this.timerTest();
     //this.fromEventTest();
-    this.customHttpObservable();
+    //this.httpObservable();
+    this.mapOperator();
   }
 
-  customHttpObservable(): void {
-    const http$: Observable<any> = new Observable((observer) => {
-      fetch("/api/courses")
-        .then((response) => {
-          return response.json();
-        })
-        .then((json) => {
-          observer.next(json);
-          observer.complete();
-        })
-        .catch((error) => {
-          observer.error(error);
-        });
-    });
+  mapOperator(): void {
+    const courses$ = this.http$.pipe(
+      map((response) => Object.values(response["payload"]))
+    );
 
-    http$.subscribe({
+    courses$.subscribe({
+      next: (courses: any) => console.log(courses),
+      error: (error) => console.log(error),
+      complete: () => console.log("HTTP stream completed"),
+    });
+  }
+
+  httpObservable(): void {
+    this.http$.subscribe({
       next: (json: any) => console.log(json),
       error: (error) => console.log(error),
-      complete: () => console.log("HTTP stream completed")
+      complete: () => console.log("HTTP stream completed"),
     });
   }
 
