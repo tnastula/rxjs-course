@@ -19,8 +19,10 @@ import {
   withLatestFrom,
   concatAll,
   shareReplay,
+  throttle,
+  throttleTime,
 } from "rxjs/operators";
-import { merge, fromEvent, Observable, concat } from "rxjs";
+import { merge, fromEvent, Observable, concat, interval } from "rxjs";
 import { Lesson } from "../model/lesson";
 import { createHttpObservable } from "../common/util";
 
@@ -44,17 +46,39 @@ export class CourseComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
+    this.streamWithStartValue();
+
+    fromEvent<any>(this.input.nativeElement, "keyup").pipe(
+      debounceTime(400),
+      map((event) => event.target.value),
+      startWith(""),
+    ).subscribe(console.log);
+  }
+
+  streamWithStartValue(): void {
+    this.lessons$ = fromEvent<any>(this.input.nativeElement, "keyup").pipe(
+      debounceTime(400),
+      map((event) => event.target.value),
+      startWith(""),
+      distinctUntilChanged(),
+      switchMap((searchTerm) => this.getLessonsStream(searchTerm))
+    );
+  }
+
+  concatStreams(): void {
     const initialLessons$ = this.getLessonsStream();
 
-    const searchLessons$ = fromEvent<any>(this.input.nativeElement, "keyup")
-      .pipe(
-        debounceTime(400),
-        map((event) => event.target.value),
-        distinctUntilChanged(),
-        switchMap((searchTerm) => this.getLessonsStream(searchTerm))
-      );
+    const searchLessons$ = fromEvent<any>(
+      this.input.nativeElement,
+      "keyup"
+    ).pipe(
+      debounceTime(400),
+      map((event) => event.target.value),
+      distinctUntilChanged(),
+      switchMap((searchTerm) => this.getLessonsStream(searchTerm))
+    );
 
-      this.lessons$ = concat(initialLessons$, searchLessons$);
+    this.lessons$ = concat(initialLessons$, searchLessons$);
   }
 
   getLessonsStream(searchTerm: string = ""): Observable<Lesson[]> {

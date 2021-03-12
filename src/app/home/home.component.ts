@@ -1,9 +1,10 @@
 import { Component, OnInit } from "@angular/core";
 import { Course } from "../model/course";
-import { interval, Observable, of, timer } from "rxjs";
+import { interval, Observable, of, throwError, timer } from "rxjs";
 import {
   catchError,
   delayWhen,
+  finalize,
   map,
   retryWhen,
   shareReplay,
@@ -26,7 +27,13 @@ export class HomeComponent implements OnInit {
     const http$ = createHttpObservable("/api/courses");
 
     const courses$ = http$.pipe(
-      tap(() => console.log("HTTP Request Executed")),
+      tap(value => console.log("HTTP response received")),
+      retryWhen((errors) =>
+        errors.pipe(
+          tap(() => console.log("Error occured, will retry soon")),
+          delayWhen(() => timer(2000))
+        )
+      ),
       map((response) => Object.values(response["payload"])),
       // Everything before shareReplay happens only once and then is just passed on
       shareReplay()
