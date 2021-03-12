@@ -22,9 +22,10 @@ import {
   throttle,
   throttleTime,
 } from "rxjs/operators";
-import { merge, fromEvent, Observable, concat, interval } from "rxjs";
+import { merge, fromEvent, Observable, concat, interval, forkJoin } from "rxjs";
 import { Lesson } from "../model/lesson";
 import { createHttpObservable } from "../common/util";
+import { debug, RxJsLoggingLevel, setRxJsLoggingLevel } from "../common/debug";
 
 @Component({
   selector: "course",
@@ -43,16 +44,26 @@ export class CourseComponent implements OnInit, AfterViewInit {
   ngOnInit() {
     this.courseId = this.route.snapshot.params["id"];
     this.course$ = createHttpObservable(`/api/courses/${this.courseId}`);
+    /* this.lessons$ = this.getLessonsStream();
+
+    forkJoin([this.course$, this.lessons$])
+      .pipe(
+        tap(([course, lessons]) => {
+          console.log('course', course);
+          console.log('lessons', lessons);
+        })
+      )
+      .subscribe(); */
   }
 
   ngAfterViewInit() {
     this.streamWithStartValue();
 
-    fromEvent<any>(this.input.nativeElement, "keyup").pipe(
+    /* fromEvent<any>(this.input.nativeElement, "keyup").pipe(
       debounceTime(400),
       map((event) => event.target.value),
       startWith(""),
-    ).subscribe(console.log);
+    ).subscribe(console.log); */
   }
 
   streamWithStartValue(): void {
@@ -61,6 +72,7 @@ export class CourseComponent implements OnInit, AfterViewInit {
       map((event) => event.target.value),
       startWith(""),
       distinctUntilChanged(),
+      debug(RxJsLoggingLevel.DEBUG, "search"),
       switchMap((searchTerm) => this.getLessonsStream(searchTerm))
     );
   }
