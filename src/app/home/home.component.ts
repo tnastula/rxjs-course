@@ -1,52 +1,35 @@
-import {Component, OnInit} from '@angular/core';
-import {Course} from "../model/course";
-import {interval, noop, Observable, of, throwError, timer} from 'rxjs';
-import {catchError, delay, delayWhen, finalize, map, retryWhen, shareReplay, tap} from 'rxjs/operators';
-import {createHttpObservable} from '../common/util';
-import { Store } from '../common/store.service';
-
+import { Component, OnInit } from "@angular/core";
+import { Course } from "../model/course";
+import { Store } from "../common/store.service";
+import { createHttpObservable } from "../common/util";
+import { Observable, timer } from "rxjs";
+import { delayWhen, map, retryWhen, shareReplay, tap } from "rxjs/operators";
 
 @Component({
-    selector: 'home',
-    templateUrl: './home.component.html',
-    styleUrls: ['./home.component.css']
+  selector: "home",
+  templateUrl: "./home.component.html",
+  styleUrls: ["./home.component.css"],
 })
 export class HomeComponent implements OnInit {
+  beginnerCourses$: Observable<Course[]>;
+  advancedCourses$: Observable<Course[]>;
 
-    beginnerCourses$: Observable<Course[]>;
+  constructor(private store: Store) {}
 
-    advancedCourses$: Observable<Course[]>;
+  ngOnInit() {
+    this.beginnerCourses$ = this.store.selectBeginnerCourses();
+    this.advancedCourses$ = this.store.selectAdvancedCourses();
+  }
 
-    constructor(private store: Store) {}
+  // Unused, left as an example
+  private getCoursesStream(): Observable<Course[]> {
+    const http$ = createHttpObservable("/api/courses");
 
-    ngOnInit() {
-
-        const http$ = createHttpObservable('/api/courses');
-
-        const courses$: Observable<Course[]> = http$
-            .pipe(
-                tap(() => console.log("HTTP request executed")),
-                map(res => Object.values(res["payload"]) ),
-                shareReplay(),
-                retryWhen(errors =>
-                    errors.pipe(
-                    delayWhen(() => timer(2000)
-                    )
-                ) )
-            );
-
-        this.beginnerCourses$ = courses$
-            .pipe(
-                map(courses => courses
-                    .filter(course => course.category == 'BEGINNER'))
-            );
-
-        this.advancedCourses$ = courses$
-            .pipe(
-                map(courses => courses
-                    .filter(course => course.category == 'ADVANCED'))
-            );
-
-    }
-
+    return http$.pipe(
+      tap(() => console.log("HTTP request executed")),
+      map((res) => Object.values(res["payload"])),
+      shareReplay(),
+      retryWhen((errors) => errors.pipe(delayWhen(() => timer(2000))))
+    );
+  }
 }
